@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Image Metadata Reader</title>
+
+        <style>
+            body {
+            font-family: Arial, sans-serif;
+            background: #0f0f0f;
+            color: #eee;
+            padding: 20px;
+            }
+
+            input {
+            margin-bottom: 20px;
+            }
+
+            h2 {
+            margin-top: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            }
+
+            h3 {
+            margin-top: 20px;
+            color: #6bff95;
+            }
+
+            pre {
+            background: #1b1b1b;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            }
+
+            .missing {
+            color: #ff6b6b;
+            }
+        </style>
+    </head>
+        <body>
+
+            <h1>📷 Image Metadata Reader</h1>
+            <input type="file" id="fileInput" accept="image/*">
+
+            <div id="output"></div>
+
+            <!-- EXIF parser -->
+            <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+
+            <script>
+                const fileInput = document.getElementById("fileInput");
+                const output = document.getElementById("output");
+
+                const sections = {
+                "📱 Device": [
+                "Make",
+                "Model",
+                "Artist",
+                "Copyright"
+                ],
+                "📸 Camera & Lens": [
+                "LensModel",
+                "FocalLength",
+                "FNumber"
+                ],
+                "⚙️ Image Settings": [
+                "ExposureTime",
+                "ISOSpeedRatings",
+                "WhiteBalance",
+                "Flash"
+                ],
+                "🕒 Date & Time": [
+                "DateTime",
+                "DateTimeOriginal",
+                "CreateDate"
+                ],
+                "🌍 Location (GPS)": [
+                "GPSLatitude",
+                "GPSLongitude",
+                "GPSAltitude"
+                ],
+                "💻 Software": [
+                "Software"
+                ]
+                };
+
+                fileInput.addEventListener("change", () => {
+                const file = fileInput.files[0];
+                if (!file) return;
+
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+
+                img.onload = () => {
+                EXIF.getData(img, function () {
+                const tags = EXIF.getAllTags(this);
+                output.innerHTML = "";
+
+                if (Object.keys(tags).length === 0) {
+                output.innerHTML = "<p>No EXIF metadata found.</p>";
+                return;
+                }
+
+                for (const [sectionName, fields] of Object.entries(sections)) {
+                const found = {};
+                const missing = [];
+
+                for (const field of fields) {
+                if (field in tags) {
+                found[field] = tags[field];
+                } else {
+                missing.push(field);
+                }
+                }
+
+                const section = document.createElement("div");
+                section.innerHTML = `
+                <h2>${sectionName}</h2>
+
+                <h3>Found</h3>
+                <pre>${Object.keys(found).length ? JSON.stringify(found, null, 2) : "None"}</pre>
+
+                <h3 class="missing">Missing</h3>
+                <pre class="missing">${missing.length ? missing.join("\n") : "None"}</pre>
+                `;
+
+                output.appendChild(section);
+                }
+                });
+                };
+                });
+        </script>
+
+    </body>
+</html>
